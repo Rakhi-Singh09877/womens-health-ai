@@ -39,3 +39,18 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Convex
+.env.local
+
+# AI
+.agents/
+.claude/
+
+# Windows
+*.lnk
+Thumbs.db
+Desktop.ini
+
+# Logs
+*.log

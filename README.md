@@ -1,36 +1,167 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Women's Health AI
 
-## Getting Started
+> AI-powered women's health platform built for the hackathon using Next.js, Convex and Enter Pro.
 
-First, run the development server:
+---
+
+## Problem Statement
+
+Women often face difficulties accessing reliable, personalized, and timely healthcare guidance. Existing solutions are fragmented, difficult to understand, or unavailable when immediate assistance is needed.
+
+Our goal is to build an AI-powered platform that provides a modern, secure and intelligent healthcare experience for women.
+
+---
+
+# Solution
+
+Women's Health AI combines artificial intelligence with a modern web application to provide:
+
+- AI-assisted health guidance
+- Symptom tracking
+- Health record management
+- Personalized recommendations
+- Secure user authentication
+- Modern responsive dashboard
+
+---
+
+# Tech Stack
+
+## Frontend
+
+- Next.js
+- React
+- TypeScript
+- Tailwind CSS
+- Enter Pro (Hackathon)
+
+## Backend
+
+- Convex
+- Convex Authentication
+- Convex Database
+- Convex Functions
+
+## Development
+
+- Git
+- GitHub
+- VS Code
+
+---
+
+# Project Structure
+
+```
+womens-health-ai/
+
+├── app/
+├── components/
+├── convex/
+├── docs/
+├── hooks/
+├── lib/
+├── public/
+├── services/
+├── types/
+└── utils/
+```
+
+---
+
+# Team Responsibilities
+
+## Member 1
+
+Backend Development
+
+- Convex Database
+- Authentication
+- API Functions
+- Business Logic
+
+---
+
+## Member 2
+
+Frontend Development
+
+- UI
+- Components
+- Dashboard
+- Responsive Design
+- Enter Pro Integration
+
+---
+
+## Member 3 (Project Lead)
+
+- Architecture
+- Integration
+- Git Management
+- Documentation
+- Code Review
+- Testing
+- Deployment
+- Team Coordination
+
+---
+
+# Git Workflow
+
+```
+main
+│
+├── develop
+│
+├── feature/backend
+│
+├── feature/frontend
+│
+└── feature/integration
+```
+
+Every feature is developed independently and merged into the develop branch after review.
+
+---
+
+# Development Status
+
+- [x] Repository Initialized
+- [x] Next.js Setup
+- [x] Convex Setup
+- [x] Folder Structure
+- [x] Git Strategy
+- [ ] Backend Development
+- [ ] Frontend Development
+- [ ] Integration
+- [ ] Testing
+- [ ] Deployment
+
+---
+
+# Getting Started
+
+Install dependencies
+
+```bash
+npm install
+```
+
+Start Next.js
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Start Convex
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+npx convex dev
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+---
 
-## Learn More
+# License
 
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+This project was developed for a Hackathon and is intended for educational and demonstration purposes.
