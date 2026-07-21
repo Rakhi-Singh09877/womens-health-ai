@@ -1,7 +1,9 @@
 import { v } from "convex/values";
 import type { Doc } from "./_generated/dataModel";
 import { mutation, query } from "./_generated/server";
-import { healthProfileFields } from "./validators";
+import { healthProfileFields, healthProfileId } from "./validators";
+import { requireResourceOwner } from "./auth";
+import { ERROR_MESSAGES } from "./constants";
 
 // --- Queries ---
 
@@ -9,7 +11,7 @@ import { healthProfileFields } from "./validators";
  * Retrieve a health profile by its ID.
  */
 export const getHealthProfile = query({
-  args: { profileId: v.id("healthProfiles") },
+  args: { profileId: healthProfileId },
   handler: async (ctx, args) => {
     return await ctx.db.get(args.profileId);
   },
@@ -47,7 +49,7 @@ export const createHealthProfile = mutation({
     // 1. Verify user exists
     const user = await ctx.db.get(args.userId);
     if (!user) {
-      throw new Error("User not found");
+      throw new Error(ERROR_MESSAGES.USER_NOT_FOUND);
     }
 
     // 2. Verify no profile exists for this user (1-to-1 constraint)
@@ -56,7 +58,7 @@ export const createHealthProfile = mutation({
       .withIndex("by_userId", (q) => q.eq("userId", args.userId))
       .unique();
     if (existing) {
-      throw new Error("Health profile already exists for this user");
+      throw new Error(ERROR_MESSAGES.HEALTH_PROFILE_ALREADY_EXISTS);
     }
 
     const profileId = await ctx.db.insert("healthProfiles", {
@@ -76,7 +78,7 @@ export const createHealthProfile = mutation({
  */
 export const updateHealthProfile = mutation({
   args: {
-    profileId: v.id("healthProfiles"),
+    profileId: healthProfileId,
     bloodGroup: v.optional(healthProfileFields.bloodGroup),
     allergies: v.optional(healthProfileFields.allergies),
     chronicConditions: v.optional(healthProfileFields.chronicConditions),
@@ -86,8 +88,10 @@ export const updateHealthProfile = mutation({
   handler: async (ctx, args) => {
     const profile = await ctx.db.get(args.profileId);
     if (!profile) {
-      throw new Error("Health profile not found");
+      throw new Error(ERROR_MESSAGES.HEALTH_PROFILE_NOT_FOUND);
     }
+
+    await requireResourceOwner(ctx, profile.userId);
 
     const updates: Partial<Omit<Doc<"healthProfiles">, "_id" | "_creationTime" | "userId">> = {};
 
@@ -119,12 +123,14 @@ export const updateHealthProfile = mutation({
  * Delete a health profile by ID.
  */
 export const deleteHealthProfile = mutation({
-  args: { profileId: v.id("healthProfiles") },
+  args: { profileId: healthProfileId },
   handler: async (ctx, args) => {
     const profile = await ctx.db.get(args.profileId);
     if (!profile) {
-      throw new Error("Health profile not found");
+      throw new Error(ERROR_MESSAGES.HEALTH_PROFILE_NOT_FOUND);
     }
+
+    await requireResourceOwner(ctx, profile.userId);
 
     await ctx.db.delete("healthProfiles", args.profileId);
     return args.profileId;
