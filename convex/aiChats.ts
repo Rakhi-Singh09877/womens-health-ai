@@ -3,7 +3,8 @@ import type { Doc, Id } from "./_generated/dataModel";
 import { mutation, query } from "./_generated/server";
 import type { MutationCtx, QueryCtx } from "./_generated/server";
 import { requireResourceOwner } from "./auth";
-import { aiChatFields } from "./validators";
+import { aiChatFields, aiChatId } from "./validators";
+import { ERROR_MESSAGES } from "./constants";
 
 // --- Private Helpers ---
 
@@ -13,7 +14,7 @@ async function assertUserExists(
 ): Promise<Doc<"users">> {
   const user = await ctx.db.get(userId);
   if (!user) {
-    throw new Error("User not found");
+    throw new Error(ERROR_MESSAGES.USER_NOT_FOUND);
   }
   return user;
 }
@@ -24,7 +25,7 @@ async function assertUserExists(
  * Retrieve a single AI chat exchange by its ID.
  */
 export const getAiChat = query({
-  args: { chatId: v.id("aiChats") },
+  args: { chatId: aiChatId },
   handler: async (ctx, args) => {
     return await ctx.db.get(args.chatId);
   },
@@ -96,11 +97,11 @@ export const createAiChat = mutation({
  * Delete an AI chat exchange. Verifies ownership before deleting.
  */
 export const deleteAiChat = mutation({
-  args: { chatId: v.id("aiChats") },
+  args: { chatId: aiChatId },
   handler: async (ctx, args) => {
     const chat = await ctx.db.get(args.chatId);
     if (!chat) {
-      throw new Error("AI chat not found");
+      throw new Error(ERROR_MESSAGES.AI_CHAT_NOT_FOUND);
     }
 
     await requireResourceOwner(ctx, chat.userId);
