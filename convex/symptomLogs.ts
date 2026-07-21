@@ -2,7 +2,9 @@ import { v } from "convex/values";
 import type { Doc, Id } from "./_generated/dataModel";
 import { mutation, query } from "./_generated/server";
 import type { MutationCtx, QueryCtx } from "./_generated/server";
-import { symptomLogFields } from "./validators";
+import { symptomLogFields, symptomLogId } from "./validators";
+import { requireResourceOwner } from "./auth";
+import { ERROR_MESSAGES } from "./constants";
 
 type SymptomLogOrder = "asc" | "desc";
 
@@ -27,7 +29,7 @@ type SymptomLogCreateArgs = {
 async function assertUserExists(ctx: QueryCtx | MutationCtx, userId: Id<"users">) {
 	const user = await ctx.db.get(userId);
 	if (!user) {
-		throw new Error("Cannot create symptom log: user does not exist");
+		throw new Error(ERROR_MESSAGES.USER_NOT_FOUND);
 	}
 
 	return user;
@@ -35,7 +37,7 @@ async function assertUserExists(ctx: QueryCtx | MutationCtx, userId: Id<"users">
 
 function assertValidMonth(month: number) {
 	if (!Number.isInteger(month) || month < 1 || month > 12) {
-		throw new Error("Month must be an integer between 1 and 12");
+		throw new Error(ERROR_MESSAGES.INVALID_MONTH);
 	}
 }
 
@@ -54,7 +56,7 @@ async function assertNoDuplicateSymptomLog(
 		.first();
 
 	if (duplicate) {
-		throw new Error("A symptom log for this user, symptom, and day already exists");
+		throw new Error(ERROR_MESSAGES.SYMPTOM_LOG_ALREADY_EXISTS_FOR_DAY);
 	}
 }
 
@@ -166,7 +168,7 @@ function getSeveritySummary(logs: Doc<"symptomLogs">[]) {
  * Retrieve a symptom log by ID.
  */
 export const getSymptomLog = query({
-	args: { symptomLogId: v.id("symptomLogs") },
+	args: { symptomLogId },
 	handler: async (ctx, args) => {
 		return await ctx.db.get(args.symptomLogId);
 	},
@@ -320,14 +322,14 @@ export const createSymptomLog = mutation({
 		const createdAt = Date.now();
 		await assertNoDuplicateSymptomLog(ctx, args, createdAt);
 
-		const symptomLogId = await ctx.db.insert("symptomLogs", {
+		const newSymptomLogId = await ctx.db.insert("symptomLogs", {
 			userId: args.userId,
 			symptom: args.symptom,
 			severity: args.severity,
 			notes: args.notes,
 			createdAt,
 		});
-		return symptomLogId;
+		return newSymptomLogId;
 	},
 });
 
@@ -336,7 +338,7 @@ export const createSymptomLog = mutation({
  */
 export const updateSymptomLog = mutation({
 	args: {
-		symptomLogId: v.id("symptomLogs"),
+		symptomLogId,
 		symptom: v.optional(symptomLogFields.symptom),
 		severity: v.optional(symptomLogFields.severity),
 		notes: v.optional(symptomLogFields.notes),
@@ -344,8 +346,10 @@ export const updateSymptomLog = mutation({
 	handler: async (ctx, args) => {
 		const symptomLog = await ctx.db.get(args.symptomLogId);
 		if (!symptomLog) {
-			throw new Error("Symptom log not found");
+			throw new Error(ERROR_MESSAGES.SYMPTOM_LOG_NOT_FOUND);
 		}
+
+		await requireResourceOwner(ctx, symptomLog.userId);
 
 		const updates: Partial<
 			Omit<Doc<"symptomLogs">, "_id" | "_creationTime" | "userId" | "createdAt">
@@ -375,12 +379,14 @@ export const updateSymptomLog = mutation({
  * Delete a symptom log.
  */
 export const deleteSymptomLog = mutation({
-	args: { symptomLogId: v.id("symptomLogs") },
+	args: { symptomLogId },
 	handler: async (ctx, args) => {
 		const symptomLog = await ctx.db.get(args.symptomLogId);
 		if (!symptomLog) {
-			throw new Error("Symptom log not found");
+			throw new Error(ERROR_MESSAGES.SYMPTOM_LOG_NOT_FOUND);
 		}
+
+		await requireResourceOwner(ctx, symptomLog.userId);
 
 		await ctx.db.delete("symptomLogs", args.symptomLogId);
 		return args.symptomLogId;

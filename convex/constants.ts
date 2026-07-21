@@ -42,6 +42,8 @@ export const ERROR_MESSAGES = {
   HEALTH_PROFILE_ALREADY_EXISTS: "Health profile already exists for this user",
   HEALTH_PROFILE_NOT_FOUND: "Health profile not found",
   SYMPTOM_LOG_NOT_FOUND: "Symptom log not found",
+  INVALID_MONTH: "Month must be an integer between 1 and 12",
+  SYMPTOM_LOG_ALREADY_EXISTS_FOR_DAY: "A symptom log for this user, symptom, and day already exists",
   HEALTH_RECORD_NOT_FOUND: "Health record not found",
   AI_CHAT_NOT_FOUND: "AI chat not found",
   UNAUTHORIZED: "Unauthorized",
