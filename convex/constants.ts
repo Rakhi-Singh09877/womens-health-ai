@@ -39,6 +39,7 @@ export const LIMITS = {
  */
 export const ERROR_MESSAGES = {
   USER_NOT_FOUND: "User not found",
+  HEALTH_PROFILE_ALREADY_EXISTS: "Health profile already exists for this user",
   HEALTH_PROFILE_NOT_FOUND: "Health profile not found",
   SYMPTOM_LOG_NOT_FOUND: "Symptom log not found",
   HEALTH_RECORD_NOT_FOUND: "Health record not found",
