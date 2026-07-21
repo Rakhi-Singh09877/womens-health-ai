@@ -2,7 +2,14 @@ import { v } from "convex/values";
 import type { Doc, Id } from "./_generated/dataModel";
 import { mutation, query } from "./_generated/server";
 import type { MutationCtx, QueryCtx } from "./_generated/server";
-import { userId, userFields } from "./validators";
+import {
+  userId,
+  userFields,
+  validateEmailFormat,
+  validatePhoneFormat,
+  validateAge,
+} from "./validators";
+import { ERROR_MESSAGES } from "./constants";
 
 // --- Private Validation Helpers ---
 
@@ -16,7 +23,7 @@ async function validateUniqueEmail(
     .withIndex("by_email", (q) => q.eq("email", email))
     .unique();
   if (existing && (!excludeUserId || existing._id !== excludeUserId)) {
-    throw new Error(`A user with email ${email} already exists`);
+    throw new Error(ERROR_MESSAGES.EMAIL_ALREADY_EXISTS);
   }
 }
 
@@ -30,7 +37,7 @@ async function validateUniquePhone(
     .filter((q) => q.eq(q.field("phone"), phone))
     .first();
   if (existing && (!excludeUserId || existing._id !== excludeUserId)) {
-    throw new Error(`A user with phone ${phone} already exists`);
+    throw new Error(ERROR_MESSAGES.PHONE_ALREADY_EXISTS);
   }
 }
 
@@ -114,6 +121,10 @@ export const createUser = mutation({
     phone: userFields.phone,
   },
   handler: async (ctx, args) => {
+    validateEmailFormat(args.email);
+    validatePhoneFormat(args.phone);
+    validateAge(args.age);
+
     await validateUniqueEmail(ctx, args.email);
     await validateUniquePhone(ctx, args.phone);
 
@@ -142,7 +153,7 @@ export const updateUser = mutation({
   handler: async (ctx, args) => {
     const user = await ctx.db.get(args.userId);
     if (!user) {
-      throw new Error("User not found");
+      throw new Error(ERROR_MESSAGES.USER_NOT_FOUND);
     }
 
     const updates: Partial<Omit<Doc<"users">, "_id" | "_creationTime">> = {};
@@ -152,16 +163,19 @@ export const updateUser = mutation({
     }
 
     if (args.email !== undefined && args.email !== user.email) {
+      validateEmailFormat(args.email);
       await validateUniqueEmail(ctx, args.email, args.userId);
       updates.email = args.email;
     }
 
     if (args.phone !== undefined && args.phone !== user.phone) {
+      validatePhoneFormat(args.phone);
       await validateUniquePhone(ctx, args.phone, args.userId);
       updates.phone = args.phone;
     }
 
     if (args.age !== undefined) {
+      validateAge(args.age);
       updates.age = args.age;
     }
 
@@ -181,7 +195,7 @@ export const deleteUser = mutation({
   handler: async (ctx, args) => {
     const user = await ctx.db.get(args.userId);
     if (!user) {
-      throw new Error("User not found");
+      throw new Error(ERROR_MESSAGES.USER_NOT_FOUND);
     }
 
     await ctx.db.delete("users", args.userId);
