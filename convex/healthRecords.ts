@@ -3,7 +3,8 @@ import type { Doc, Id } from "./_generated/dataModel";
 import { mutation, query } from "./_generated/server";
 import type { MutationCtx, QueryCtx } from "./_generated/server";
 import { requireResourceOwner } from "./auth";
-import { healthRecordFields } from "./validators";
+import { healthRecordFields, healthRecordId } from "./validators";
+import { ERROR_MESSAGES } from "./constants";
 
 // --- Private Helpers ---
 
@@ -13,7 +14,7 @@ async function assertUserExists(
 ): Promise<Doc<"users">> {
   const user = await ctx.db.get(userId);
   if (!user) {
-    throw new Error("User not found");
+    throw new Error(ERROR_MESSAGES.USER_NOT_FOUND);
   }
   return user;
 }
@@ -24,7 +25,7 @@ async function assertUserExists(
  * Retrieve a health record by its ID.
  */
 export const getHealthRecord = query({
-  args: { recordId: v.id("healthRecords") },
+  args: { recordId: healthRecordId },
   handler: async (ctx, args) => {
     return await ctx.db.get(args.recordId);
   },
@@ -100,14 +101,14 @@ export const createHealthRecord = mutation({
  */
 export const updateHealthRecord = mutation({
   args: {
-    recordId: v.id("healthRecords"),
+    recordId: healthRecordId,
     title: v.optional(healthRecordFields.title),
     fileUrl: v.optional(healthRecordFields.fileUrl),
   },
   handler: async (ctx, args) => {
     const record = await ctx.db.get(args.recordId);
     if (!record) {
-      throw new Error("Health record not found");
+      throw new Error(ERROR_MESSAGES.HEALTH_RECORD_NOT_FOUND);
     }
 
     await requireResourceOwner(ctx, record.userId);
@@ -135,11 +136,11 @@ export const updateHealthRecord = mutation({
  * Delete a health record. Verifies ownership before deleting.
  */
 export const deleteHealthRecord = mutation({
-  args: { recordId: v.id("healthRecords") },
+  args: { recordId: healthRecordId },
   handler: async (ctx, args) => {
     const record = await ctx.db.get(args.recordId);
     if (!record) {
-      throw new Error("Health record not found");
+      throw new Error(ERROR_MESSAGES.HEALTH_RECORD_NOT_FOUND);
     }
 
     await requireResourceOwner(ctx, record.userId);
