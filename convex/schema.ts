@@ -55,4 +55,15 @@ export default defineSchema({
     triggeredSymptoms: v.optional(v.array(v.string())),
     createdAt: v.number(),
   }).index("by_userId", ["userId"]),
+
+  cycles: defineTable({
+    userId: v.id("users"),
+    lastPeriodStartDate: v.number(),
+    cycleLength: v.number(),
+    currentCycleDay: v.number(),
+    currentPhase: v.string(),
+    nextPeriodDate: v.number(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  }).index("by_userId", ["userId"]),
 });

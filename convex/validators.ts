@@ -98,6 +98,28 @@ export const aiInsightFields = {
 
 export const aiInsightValidator = v.object(aiInsightFields);
 
+// --- Cycles ---
+
+export const cycleId = v.id("cycles");
+
+export const cycleFields = {
+  userId,
+  lastPeriodStartDate: v.number(),
+  cycleLength: v.number(),
+  currentCycleDay: v.number(),
+  currentPhase: v.union(
+    v.literal("Menstruation"),
+    v.literal("Follicular"),
+    v.literal("Ovulation"),
+    v.literal("Luteal")
+  ),
+  nextPeriodDate: v.number(),
+  createdAt: v.number(),
+  updatedAt: v.number(),
+};
+
+export const cycleValidator = v.object(cycleFields);
+
 // --- Validation Functions ---
 
 export function validateEmailFormat(email: string): void {
