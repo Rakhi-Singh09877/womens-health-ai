@@ -23,7 +23,7 @@ export default defineSchema({
     userId: v.id("users"),
     symptoms: v.array(v.string()),
     severities: v.record(v.string(), v.number()),
-    notes: v.string(),
+    notes: v.optional(v.string()),
     mood: v.optional(v.string()),
     energy: v.optional(v.number()),
     sleep: v.optional(v.number()),
