@@ -46,12 +46,18 @@ export const runAiAnalysis = mutation({
 
     const symptomCounts: Record<string, number> = {};
     let totalSeverity = 0;
+    let severityCount = 0;
     for (const log of logs) {
-      symptomCounts[log.symptom] = (symptomCounts[log.symptom] ?? 0) + 1;
-      totalSeverity += log.severity;
+      for (const symptom of log.symptoms) {
+        symptomCounts[symptom] = (symptomCounts[symptom] ?? 0) + 1;
+      }
+      for (const severity of Object.values(log.severities)) {
+        totalSeverity += severity;
+        severityCount += 1;
+      }
     }
 
-    let topSymptom = logs[0].symptom;
+    let topSymptom = Object.keys(symptomCounts)[0] ?? "No symptom recorded";
     let topCount = symptomCounts[topSymptom];
     for (const [symptom, count] of Object.entries(symptomCounts)) {
       if (count > topCount) {
@@ -61,8 +67,9 @@ export const runAiAnalysis = mutation({
     }
 
     const totalLogs = logs.length;
-    const averageSeverity = totalSeverity / totalLogs;
-    const confidence = Math.min(95, Math.round((topCount / totalLogs) * 100));
+    const totalSymptoms = Object.values(symptomCounts).reduce((sum, count) => sum + count, 0);
+    const averageSeverity = severityCount === 0 ? 0 : totalSeverity / severityCount;
+    const confidence = Math.min(95, Math.round((topCount / totalSymptoms) * 100));
     const status: "Verified" | "Confirmed" | "Insufficient" =
       confidence >= 70 ? "Verified" : confidence >= 40 ? "Confirmed" : "Insufficient";
     const patternText = `${topSymptom} appears in ${topCount} of ${totalLogs} logs, with average severity ${averageSeverity.toFixed(1)}.`;

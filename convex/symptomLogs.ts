@@ -21,9 +21,12 @@ type SymptomLogFilterArgs = {
 
 type SymptomLogCreateArgs = {
 	userId: Id<"users">;
-	symptom: string;
-	severity: number;
+	symptoms: string[];
+	severities: Record<string, number>;
 	notes: string;
+	mood?: string;
+	energy?: number;
+	sleep?: number;
 };
 
 async function assertUserExists(ctx: QueryCtx | MutationCtx, userId: Id<"users">) {
@@ -42,21 +45,21 @@ function assertValidMonth(month: number) {
 }
 
 async function assertNoDuplicateSymptomLog(
-	ctx: QueryCtx,
+	ctx: QueryCtx | MutationCtx,
 	args: SymptomLogCreateArgs,
 	createdAt: number,
 ) {
 	const bounds = getDayBounds(createdAt);
-	const duplicate = await ctx.db
+	const logsOnSameDay = ctx.db
 		.query("symptomLogs")
 		.withIndex("by_userId", (q) => q.eq("userId", args.userId))
-		.filter((q) => q.eq(q.field("symptom"), args.symptom))
 		.filter((q) => q.gte(q.field("createdAt"), bounds.start))
-		.filter((q) => q.lt(q.field("createdAt"), bounds.end))
-		.first();
+		.filter((q) => q.lt(q.field("createdAt"), bounds.end));
 
-	if (duplicate) {
-		throw new Error(ERROR_MESSAGES.SYMPTOM_LOG_ALREADY_EXISTS_FOR_DAY);
+	for await (const log of logsOnSameDay) {
+		if (log.symptoms.some((symptom) => args.symptoms.includes(symptom))) {
+			throw new Error(ERROR_MESSAGES.SYMPTOM_LOG_ALREADY_EXISTS_FOR_DAY);
+		}
 	}
 }
 
@@ -97,20 +100,6 @@ async function collectFilteredSymptomLogs(
 		.query("symptomLogs")
 		.withIndex("by_userId", (q) => q.eq("userId", args.userId));
 
-	if (args.symptom !== undefined) {
-		logsQuery = logsQuery.filter((q) => q.eq(q.field("symptom"), args.symptom));
-	}
-
-	if (args.minSeverity !== undefined) {
-		const minSeverity = args.minSeverity;
-		logsQuery = logsQuery.filter((q) => q.gte(q.field("severity"), minSeverity));
-	}
-
-	if (args.maxSeverity !== undefined) {
-		const maxSeverity = args.maxSeverity;
-		logsQuery = logsQuery.filter((q) => q.lte(q.field("severity"), maxSeverity));
-	}
-
 	if (args.startDate !== undefined) {
 		const startDate = args.startDate;
 		logsQuery = logsQuery.filter((q) => q.gte(q.field("createdAt"), startDate));
@@ -123,7 +112,17 @@ async function collectFilteredSymptomLogs(
 
 	const logs: Doc<"symptomLogs">[] = [];
 	for await (const log of logsQuery) {
-		logs.push(log);
+		const matchesSymptom =
+			args.symptom === undefined || log.symptoms.includes(args.symptom);
+		const matchesSeverity = Object.values(log.severities).some(
+			(severity) =>
+				(args.minSeverity === undefined || severity >= args.minSeverity) &&
+				(args.maxSeverity === undefined || severity <= args.maxSeverity),
+		);
+
+		if (matchesSymptom && matchesSeverity) {
+			logs.push(log);
+		}
 	}
 
 	const sortedLogs = sortSymptomLogs(logs, args.order ?? "desc");
@@ -141,21 +140,32 @@ function getSeveritySummary(logs: Doc<"symptomLogs">[]) {
 		};
 	}
 
+	const severityValues = logs.flatMap((log) => Object.values(log.severities));
+	if (severityValues.length === 0) {
+		return {
+			totalLogs: logs.length,
+			averageSeverity: null as number | null,
+			minSeverity: null as number | null,
+			maxSeverity: null as number | null,
+			severityCounts: {} as Record<number, number>,
+		};
+	}
+
 	let totalSeverity = 0;
-	let minSeverity = logs[0].severity;
-	let maxSeverity = logs[0].severity;
+	let minSeverity = severityValues[0];
+	let maxSeverity = severityValues[0];
 	const severityCounts: Record<number, number> = {};
 
-	for (const log of logs) {
-		totalSeverity += log.severity;
-		minSeverity = Math.min(minSeverity, log.severity);
-		maxSeverity = Math.max(maxSeverity, log.severity);
-		severityCounts[log.severity] = (severityCounts[log.severity] ?? 0) + 1;
+	for (const severity of severityValues) {
+		totalSeverity += severity;
+		minSeverity = Math.min(minSeverity, severity);
+		maxSeverity = Math.max(maxSeverity, severity);
+		severityCounts[severity] = (severityCounts[severity] ?? 0) + 1;
 	}
 
 	return {
 		totalLogs: logs.length,
-		averageSeverity: totalSeverity / logs.length,
+		averageSeverity: totalSeverity / severityValues.length,
 		minSeverity,
 		maxSeverity,
 		severityCounts,
@@ -198,9 +208,9 @@ export const listSymptomLogs = query({
 export const filterSymptomLogs = query({
 	args: {
 		userId: symptomLogFields.userId,
-		symptom: v.optional(symptomLogFields.symptom),
-		minSeverity: v.optional(symptomLogFields.severity),
-		maxSeverity: v.optional(symptomLogFields.severity),
+		symptom: v.optional(v.string()),
+		minSeverity: v.optional(v.number()),
+		maxSeverity: v.optional(v.number()),
 		startDate: v.optional(v.number()),
 		endDate: v.optional(v.number()),
 		limit: v.optional(v.number()),
@@ -284,8 +294,10 @@ export const getSeverityTracking = query({
 			const day = new Date(log.createdAt).toISOString().slice(0, 10);
 			const current = dailySeverity[day] ?? { totalSeverity: 0, logCount: 0 };
 			dailySeverity[day] = {
-				totalSeverity: current.totalSeverity + log.severity,
-				logCount: current.logCount + 1,
+			totalSeverity:
+				current.totalSeverity +
+				Object.values(log.severities).reduce((sum, severity) => sum + severity, 0),
+			logCount: current.logCount + Object.keys(log.severities).length,
 			};
 		}
 
@@ -313,9 +325,12 @@ export const getSeverityTracking = query({
 export const createSymptomLog = mutation({
 	args: {
 		userId: symptomLogFields.userId,
-		symptom: symptomLogFields.symptom,
-		severity: symptomLogFields.severity,
+		symptoms: symptomLogFields.symptoms,
+		severities: symptomLogFields.severities,
 		notes: symptomLogFields.notes,
+		mood: symptomLogFields.mood,
+		energy: symptomLogFields.energy,
+		sleep: symptomLogFields.sleep,
 	},
 	handler: async (ctx, args) => {
 		await assertUserExists(ctx, args.userId);
@@ -324,9 +339,12 @@ export const createSymptomLog = mutation({
 
 		const newSymptomLogId = await ctx.db.insert("symptomLogs", {
 			userId: args.userId,
-			symptom: args.symptom,
-			severity: args.severity,
+			symptoms: args.symptoms,
+			severities: args.severities,
 			notes: args.notes,
+			mood: args.mood,
+			energy: args.energy,
+			sleep: args.sleep,
 			createdAt,
 		});
 		return newSymptomLogId;
@@ -340,9 +358,12 @@ export const updateSymptomLog = mutation({
 	args: {
 		symptomLogId,
 		callerId: symptomLogFields.userId,
-		symptom: v.optional(symptomLogFields.symptom),
-		severity: v.optional(symptomLogFields.severity),
+		symptoms: v.optional(symptomLogFields.symptoms),
+		severities: v.optional(symptomLogFields.severities),
 		notes: v.optional(symptomLogFields.notes),
+		mood: v.optional(symptomLogFields.mood),
+		energy: v.optional(symptomLogFields.energy),
+		sleep: v.optional(symptomLogFields.sleep),
 	},
 	handler: async (ctx, args) => {
 		const symptomLog = await ctx.db.get(args.symptomLogId);
@@ -356,16 +377,28 @@ export const updateSymptomLog = mutation({
 			Omit<Doc<"symptomLogs">, "_id" | "_creationTime" | "userId" | "createdAt">
 		> = {};
 
-		if (args.symptom !== undefined) {
-			updates.symptom = args.symptom;
+		if (args.symptoms !== undefined) {
+			updates.symptoms = args.symptoms;
 		}
 
-		if (args.severity !== undefined) {
-			updates.severity = args.severity;
+		if (args.severities !== undefined) {
+			updates.severities = args.severities;
 		}
 
 		if (args.notes !== undefined) {
 			updates.notes = args.notes;
+		}
+
+		if (args.mood !== undefined) {
+			updates.mood = args.mood;
+		}
+
+		if (args.energy !== undefined) {
+			updates.energy = args.energy;
+		}
+
+		if (args.sleep !== undefined) {
+			updates.sleep = args.sleep;
 		}
 
 		if (Object.keys(updates).length > 0) {
@@ -418,12 +451,16 @@ export const getSymptomTimeline = query({
       .sort(([a], [b]) => a.localeCompare(b))
       .map(([monthKey, monthLogs]) => {
         const counts: Record<string, number> = {};
-        for (const log of monthLogs) {
-          counts[log.symptom] = (counts[log.symptom] ?? 0) + 1;
-        }
-        const keySymptom = Object.entries(counts).sort((a, b) => b[1] - a[1])[0][0];
-        const severityTrend =
-          monthLogs.reduce((sum, l) => sum + l.severity, 0) / monthLogs.length;
+		for (const log of monthLogs) {
+			for (const symptom of log.symptoms) {
+				counts[symptom] = (counts[symptom] ?? 0) + 1;
+			}
+		}
+		const keySymptom = Object.entries(counts).sort((a, b) => b[1] - a[1])[0]?.[0] ?? null;
+		const severityValues = monthLogs.flatMap((log) => Object.values(log.severities));
+		const severityTrend = severityValues.length === 0
+			? 0
+			: severityValues.reduce((sum, severity) => sum + severity, 0) / severityValues.length;
 
         return {
           monthLabel: new Date(monthKey + "-01").toLocaleString("default", {

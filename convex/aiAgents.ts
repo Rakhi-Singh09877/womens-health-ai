@@ -78,7 +78,7 @@ export const runDualAgentAnalysis = action({
     const logsSummary = logs
       .map(
         (log) =>
-          `Date: ${new Date(log.createdAt).toISOString().slice(0, 10)}, Symptom: ${log.symptom}, Severity: ${log.severity}/10, Notes: ${log.notes || "none"}`,
+          `Date: ${new Date(log.createdAt).toISOString().slice(0, 10)}, Symptoms: ${log.symptoms.map((symptom) => `${symptom} (${log.severities[symptom] ?? "unknown"}/10)`).join(", ") || "none"}, Notes: ${log.notes || "none"}`,
       )
       .join("\n");
 
