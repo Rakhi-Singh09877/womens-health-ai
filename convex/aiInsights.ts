@@ -80,6 +80,9 @@ export const runAiAnalysis = mutation({
       confidence,
       status,
       evidenceCount: topCount,
+      processingStatus: "completed",
+      agentDebateSummary: `Top symptom: ${topSymptom} appears in ${topCount} of ${totalLogs} logs with average severity ${averageSeverity.toFixed(1)}/10.`,
+      triggeredSymptoms: [topSymptom],
       createdAt: Date.now(),
     });
   },
