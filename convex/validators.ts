@@ -90,11 +90,7 @@ export const aiInsightFields = {
   confidence: v.number(),
   status: v.union(v.literal("Verified"), v.literal("Confirmed"), v.literal("Insufficient")),
   evidenceCount: v.number(),
-  processingStatus: v.union(
-    v.literal("processing"),
-    v.literal("completed"),
-    v.literal("failed")
-  ),
+  processingStatus: v.union(v.literal("processing"), v.literal("completed"), v.literal("failed")),
   agentDebateSummary: v.optional(v.string()),
   triggeredSymptoms: v.optional(v.array(v.string())),
   createdAt: v.number(),

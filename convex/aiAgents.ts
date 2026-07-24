@@ -128,12 +128,6 @@ export const runDualAgentAnalysis = action({
         };
       }
 
-      // Extract triggered symptoms from the pattern text (symptoms that appear in the final pattern)
-      const triggeredSymptoms = logs
-        .flatMap(log => log.symptoms)
-        .filter((symptom, index, arr) => arr.indexOf(symptom) === index) // unique
-        .slice(0, 5); // top 5 symptoms
-
       return await ctx.runMutation(internal.aiAgents.storeInsight, {
         userId: args.userId,
         patternText: parsed.finalPatternText,
@@ -142,7 +136,7 @@ export const runDualAgentAnalysis = action({
         evidenceCount: parsed.evidenceCount,
         processingStatus: "completed",
         agentDebateSummary: `Insight Agent proposed: "${candidatePattern}". Verifier Agent confirmed with ${parsed.confidence}% confidence.`,
-        triggeredSymptoms: triggeredSymptoms,
+        triggeredSymptoms: logs.flatMap(log => log.symptoms).filter((s, i, arr) => arr.indexOf(s) === i).slice(0, 5),
       });
     } catch (error) {
       console.error("Agent analysis failed:", error);

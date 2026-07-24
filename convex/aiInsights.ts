@@ -40,6 +40,9 @@ export const runAiAnalysis = mutation({
         confidence: 0,
         status: "Insufficient",
         evidenceCount: logs.length,
+        processingStatus: "completed",
+        agentDebateSummary: `Analysis skipped: Only ${logs.length} logs available.`,
+        triggeredSymptoms: logs.flatMap(l => l.symptoms).filter((s, i, arr) => arr.indexOf(s) === i),
         createdAt: Date.now(),
       });
     }
@@ -81,7 +84,7 @@ export const runAiAnalysis = mutation({
       status,
       evidenceCount: topCount,
       processingStatus: "completed",
-      agentDebateSummary: `Top symptom: ${topSymptom} appears in ${topCount} of ${totalLogs} logs with average severity ${averageSeverity.toFixed(1)}/10.`,
+      agentDebateSummary: `Top symptom: ${topSymptom} (${topCount}/${totalLogs})`,
       triggeredSymptoms: [topSymptom],
       createdAt: Date.now(),
     });
