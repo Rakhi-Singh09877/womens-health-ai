@@ -2,7 +2,7 @@ import { v } from "convex/values";
 import type { Doc, Id } from "./_generated/dataModel";
 import { mutation, query } from "./_generated/server";
 import type { MutationCtx, QueryCtx } from "./_generated/server";
-import { requireResourceOwner } from "./auth";
+import { assertResourceOwner } from "./auth";
 import { healthRecordFields, healthRecordId } from "./validators";
 import { ERROR_MESSAGES } from "./constants";
 
@@ -102,6 +102,7 @@ export const createHealthRecord = mutation({
 export const updateHealthRecord = mutation({
   args: {
     recordId: healthRecordId,
+    callerId: healthRecordFields.userId,
     title: v.optional(healthRecordFields.title),
     fileUrl: v.optional(healthRecordFields.fileUrl),
   },
@@ -111,7 +112,7 @@ export const updateHealthRecord = mutation({
       throw new Error(ERROR_MESSAGES.HEALTH_RECORD_NOT_FOUND);
     }
 
-    await requireResourceOwner(ctx, record.userId);
+    assertResourceOwner(args.callerId, record.userId);
 
     const updates: Partial<
       Omit<Doc<"healthRecords">, "_id" | "_creationTime" | "userId" | "uploadedAt">
@@ -136,14 +137,14 @@ export const updateHealthRecord = mutation({
  * Delete a health record. Verifies ownership before deleting.
  */
 export const deleteHealthRecord = mutation({
-  args: { recordId: healthRecordId },
+  args: { recordId: healthRecordId, callerId: healthRecordFields.userId },
   handler: async (ctx, args) => {
     const record = await ctx.db.get(args.recordId);
     if (!record) {
       throw new Error(ERROR_MESSAGES.HEALTH_RECORD_NOT_FOUND);
     }
 
-    await requireResourceOwner(ctx, record.userId);
+    assertResourceOwner(args.callerId, record.userId);
 
     await ctx.db.delete("healthRecords", args.recordId);
     return args.recordId;

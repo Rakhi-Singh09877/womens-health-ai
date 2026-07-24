@@ -2,7 +2,7 @@ import { v } from "convex/values";
 import type { Doc, Id } from "./_generated/dataModel";
 import { mutation, query } from "./_generated/server";
 import type { MutationCtx, QueryCtx } from "./_generated/server";
-import { requireResourceOwner } from "./auth";
+import { assertResourceOwner } from "./auth";
 import { aiChatFields, aiChatId } from "./validators";
 import { ERROR_MESSAGES } from "./constants";
 
@@ -97,14 +97,14 @@ export const createAiChat = mutation({
  * Delete an AI chat exchange. Verifies ownership before deleting.
  */
 export const deleteAiChat = mutation({
-  args: { chatId: aiChatId },
+  args: { chatId: aiChatId, callerId: aiChatFields.userId },
   handler: async (ctx, args) => {
     const chat = await ctx.db.get(args.chatId);
     if (!chat) {
       throw new Error(ERROR_MESSAGES.AI_CHAT_NOT_FOUND);
     }
 
-    await requireResourceOwner(ctx, chat.userId);
+    assertResourceOwner(args.callerId, chat.userId);
 
     await ctx.db.delete("aiChats", args.chatId);
     return args.chatId;

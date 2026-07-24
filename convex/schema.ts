@@ -40,4 +40,13 @@ export default defineSchema({
     response: v.string(),
     createdAt: v.number(),
   }).index("by_userId", ["userId"]),
+
+  aiInsights: defineTable({
+    userId: v.id("users"),
+    patternText: v.string(),
+    confidence: v.number(),
+    status: v.union(v.literal("Verified"), v.literal("Confirmed"), v.literal("Insufficient")),
+    evidenceCount: v.number(),
+    createdAt: v.number(),
+  }).index("by_userId", ["userId"]),
 });

@@ -17,6 +17,9 @@ export const healthRecordId = v.id("healthRecords");
 /** Reference to an AI chat document. */
 export const aiChatId = v.id("aiChats");
 
+/** Reference to an AI insight document. */
+export const aiInsightId = v.id("aiInsights");
+
 // --- User ---
 
 export const userFields = {
@@ -75,6 +78,19 @@ export const aiChatFields = {
 };
 
 export const aiChatValidator = v.object(aiChatFields);
+
+// --- AI Insight ---
+
+export const aiInsightFields = {
+  userId,
+  patternText: v.string(),
+  confidence: v.number(),
+  status: v.union(v.literal("Verified"), v.literal("Confirmed"), v.literal("Insufficient")),
+  evidenceCount: v.number(),
+  createdAt: v.number(),
+};
+
+export const aiInsightValidator = v.object(aiInsightFields);
 
 // --- Validation Functions ---
 

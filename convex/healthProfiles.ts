@@ -2,7 +2,7 @@ import { v } from "convex/values";
 import type { Doc } from "./_generated/dataModel";
 import { mutation, query } from "./_generated/server";
 import { healthProfileFields, healthProfileId } from "./validators";
-import { requireResourceOwner } from "./auth";
+import { assertResourceOwner } from "./auth";
 import { ERROR_MESSAGES } from "./constants";
 
 // --- Queries ---
@@ -79,6 +79,7 @@ export const createHealthProfile = mutation({
 export const updateHealthProfile = mutation({
   args: {
     profileId: healthProfileId,
+    callerId: healthProfileFields.userId,
     bloodGroup: v.optional(healthProfileFields.bloodGroup),
     allergies: v.optional(healthProfileFields.allergies),
     chronicConditions: v.optional(healthProfileFields.chronicConditions),
@@ -91,7 +92,7 @@ export const updateHealthProfile = mutation({
       throw new Error(ERROR_MESSAGES.HEALTH_PROFILE_NOT_FOUND);
     }
 
-    await requireResourceOwner(ctx, profile.userId);
+    assertResourceOwner(args.callerId, profile.userId);
 
     const updates: Partial<Omit<Doc<"healthProfiles">, "_id" | "_creationTime" | "userId">> = {};
 
@@ -123,14 +124,14 @@ export const updateHealthProfile = mutation({
  * Delete a health profile by ID.
  */
 export const deleteHealthProfile = mutation({
-  args: { profileId: healthProfileId },
+  args: { profileId: healthProfileId, callerId: healthProfileFields.userId },
   handler: async (ctx, args) => {
     const profile = await ctx.db.get(args.profileId);
     if (!profile) {
       throw new Error(ERROR_MESSAGES.HEALTH_PROFILE_NOT_FOUND);
     }
 
-    await requireResourceOwner(ctx, profile.userId);
+    assertResourceOwner(args.callerId, profile.userId);
 
     await ctx.db.delete("healthProfiles", args.profileId);
     return args.profileId;

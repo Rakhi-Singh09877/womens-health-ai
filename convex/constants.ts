@@ -46,6 +46,7 @@ export const ERROR_MESSAGES = {
   SYMPTOM_LOG_ALREADY_EXISTS_FOR_DAY: "A symptom log for this user, symptom, and day already exists",
   HEALTH_RECORD_NOT_FOUND: "Health record not found",
   AI_CHAT_NOT_FOUND: "AI chat not found",
+  AI_INSIGHT_NOT_FOUND: "AI insight not found",
   UNAUTHORIZED: "Unauthorized",
   NOT_AUTHENTICATED: "Not authenticated",
   EMAIL_ALREADY_EXISTS: "Email already exists",

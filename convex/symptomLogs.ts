@@ -3,7 +3,7 @@ import type { Doc, Id } from "./_generated/dataModel";
 import { mutation, query } from "./_generated/server";
 import type { MutationCtx, QueryCtx } from "./_generated/server";
 import { symptomLogFields, symptomLogId } from "./validators";
-import { requireResourceOwner } from "./auth";
+import { assertResourceOwner } from "./auth";
 import { ERROR_MESSAGES } from "./constants";
 
 type SymptomLogOrder = "asc" | "desc";
@@ -339,6 +339,7 @@ export const createSymptomLog = mutation({
 export const updateSymptomLog = mutation({
 	args: {
 		symptomLogId,
+		callerId: symptomLogFields.userId,
 		symptom: v.optional(symptomLogFields.symptom),
 		severity: v.optional(symptomLogFields.severity),
 		notes: v.optional(symptomLogFields.notes),
@@ -349,7 +350,7 @@ export const updateSymptomLog = mutation({
 			throw new Error(ERROR_MESSAGES.SYMPTOM_LOG_NOT_FOUND);
 		}
 
-		await requireResourceOwner(ctx, symptomLog.userId);
+		assertResourceOwner(args.callerId, symptomLog.userId);
 
 		const updates: Partial<
 			Omit<Doc<"symptomLogs">, "_id" | "_creationTime" | "userId" | "createdAt">
@@ -379,16 +380,59 @@ export const updateSymptomLog = mutation({
  * Delete a symptom log.
  */
 export const deleteSymptomLog = mutation({
-	args: { symptomLogId },
+	args: { symptomLogId, callerId: symptomLogFields.userId },
 	handler: async (ctx, args) => {
 		const symptomLog = await ctx.db.get(args.symptomLogId);
 		if (!symptomLog) {
 			throw new Error(ERROR_MESSAGES.SYMPTOM_LOG_NOT_FOUND);
 		}
 
-		await requireResourceOwner(ctx, symptomLog.userId);
+		assertResourceOwner(args.callerId, symptomLog.userId);
 
 		await ctx.db.delete("symptomLogs", args.symptomLogId);
 		return args.symptomLogId;
 	},
+});
+
+/**
+ * Returns month-by-month aggregated symptom data (label, severity trend, key symptom) for the doctor timeline view.
+ */
+export const getSymptomTimeline = query({
+  args: { userId: symptomLogFields.userId },
+  handler: async (ctx, args) => {
+    const logs: Doc<"symptomLogs">[] = [];
+    for await (const log of ctx.db
+      .query("symptomLogs")
+      .withIndex("by_userId", (q) => q.eq("userId", args.userId))) {
+      logs.push(log);
+    }
+
+    const byMonth: Record<string, Doc<"symptomLogs">[]> = {};
+    for (const log of logs) {
+      const key = new Date(log.createdAt).toISOString().slice(0, 7);
+      byMonth[key] ??= [];
+      byMonth[key].push(log);
+    }
+
+    return Object.entries(byMonth)
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([monthKey, monthLogs]) => {
+        const counts: Record<string, number> = {};
+        for (const log of monthLogs) {
+          counts[log.symptom] = (counts[log.symptom] ?? 0) + 1;
+        }
+        const keySymptom = Object.entries(counts).sort((a, b) => b[1] - a[1])[0][0];
+        const severityTrend =
+          monthLogs.reduce((sum, l) => sum + l.severity, 0) / monthLogs.length;
+
+        return {
+          monthLabel: new Date(monthKey + "-01").toLocaleString("default", {
+            month: "long",
+            year: "numeric",
+          }),
+          severityTrend: Number(severityTrend.toFixed(1)),
+          keySymptom,
+        };
+      });
+  },
 });
