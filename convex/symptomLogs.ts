@@ -23,7 +23,7 @@ type SymptomLogCreateArgs = {
 	userId: Id<"users">;
 	symptoms: string[];
 	severities: Record<string, number>;
-	notes: string;
+	notes?: string;
 	mood?: string;
 	energy?: number;
 	sleep?: number;
@@ -327,7 +327,7 @@ export const createSymptomLog = mutation({
 		userId: symptomLogFields.userId,
 		symptoms: symptomLogFields.symptoms,
 		severities: symptomLogFields.severities,
-		notes: symptomLogFields.notes,
+		notes: v.optional(v.string()),
 		mood: symptomLogFields.mood,
 		energy: symptomLogFields.energy,
 		sleep: symptomLogFields.sleep,
