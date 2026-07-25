@@ -41,7 +41,7 @@ Women's Health AI combines artificial intelligence with a modern web application
 - Convex Authentication
 - Convex Database
 - Convex Functions
-- Grok API (xAI)
+- Groq API (Llama 3.1)
 
 ## Development
 
@@ -163,15 +163,15 @@ npx convex dev
 
 ## AI Configuration
 
-The backend uses xAI's Grok API for symptom-pattern analysis. Set these Convex
+The backend uses Groq API for symptom-pattern analysis. Set these Convex
 environment variables before running or deploying the backend:
 
 ```bash
-npx convex env set XAI_API_KEY <your-xai-api-key>
-npx convex env set XAI_MODEL grok-2-latest # optional
+npx convex env set GROQ_API_KEY <your-groq-api-key>
+npx convex env set GROQ_MODEL llama-3.1-8b-instant # optional
 ```
 
-`XAI_MODEL` defaults to `grok-2-latest` when it is not set.
+`GROQ_MODEL` defaults to `llama-3.1-8b-instant` when it is not set.
 
 ---
 
