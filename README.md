@@ -41,6 +41,7 @@ Women's Health AI combines artificial intelligence with a modern web application
 - Convex Authentication
 - Convex Database
 - Convex Functions
+- Grok API (xAI)
 
 ## Development
 
@@ -159,6 +160,18 @@ Start Convex
 ```bash
 npx convex dev
 ```
+
+## AI Configuration
+
+The backend uses xAI's Grok API for symptom-pattern analysis. Set these Convex
+environment variables before running or deploying the backend:
+
+```bash
+npx convex env set XAI_API_KEY <your-xai-api-key>
+npx convex env set XAI_MODEL grok-2-latest # optional
+```
+
+`XAI_MODEL` defaults to `grok-2-latest` when it is not set.
 
 ---
 

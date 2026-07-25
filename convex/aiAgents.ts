@@ -3,67 +3,106 @@ import { internal, api } from "./_generated/api";
 import { aiInsightFields } from "./validators";
 import type { Doc } from "./_generated/dataModel";
 
-const CLAUDE_API_URL = "https://api.anthropic.com/v1/messages";
-const CLAUDE_MODEL = "claude-sonnet-5";
-
-type ClaudeTextBlock = {
-  type?: unknown;
-  text?: unknown;
-};
+const XAI_CHAT_COMPLETIONS_URL = "https://api.x.ai/v1/chat/completions";
+const DEFAULT_XAI_MODEL = "grok-2-latest";
+const XAI_REQUEST_TIMEOUT_MS = 15_000;
+const XAI_MAX_ATTEMPTS = 2;
 
 function getTextContent(data: unknown): string {
   if (
     typeof data !== "object" ||
     data === null ||
-    !("content" in data) ||
-    !Array.isArray(data.content)
+    !("choices" in data) ||
+    !Array.isArray(data.choices)
   ) {
-    throw new Error("Claude API returned an unexpected response format");
+    throw new Error("Grok API returned an unexpected response format");
   }
 
-  const textBlock = data.content.find(
-    (block): block is ClaudeTextBlock =>
-      typeof block === "object" &&
-      block !== null &&
-      (block as ClaudeTextBlock).type === "text" &&
-      typeof (block as ClaudeTextBlock).text === "string",
-  );
+  const firstChoice = data.choices[0];
+  if (
+    typeof firstChoice !== "object" ||
+    firstChoice === null ||
+    !("message" in firstChoice) ||
+    typeof firstChoice.message !== "object" ||
+    firstChoice.message === null ||
+    !("content" in firstChoice.message) ||
+    typeof firstChoice.message.content !== "string"
+  ) {
+    throw new Error("Grok API returned an unexpected response format");
+  }
 
-  return typeof textBlock?.text === "string" ? textBlock.text : "";
+  return firstChoice.message.content;
 }
 
-async function callClaude(
+function isTransientStatus(status: number): boolean {
+  return status === 429 || status >= 500;
+}
+
+function delay(milliseconds: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, milliseconds));
+}
+
+async function callGrok(
   systemPrompt: string,
   userPrompt: string,
 ): Promise<string> {
-  const apiKey = env.ANTHROPIC_API_KEY;
+  const apiKey = env.XAI_API_KEY;
   if (!apiKey) {
-    throw new Error(
-      "ANTHROPIC_API_KEY is not set in Convex environment variables",
-    );
+    throw new Error("XAI_API_KEY is not set in Convex environment variables");
   }
 
-  const response = await fetch(CLAUDE_API_URL, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "x-api-key": apiKey,
-      "anthropic-version": "2023-06-01",
-    },
-    body: JSON.stringify({
-      model: CLAUDE_MODEL,
-      max_tokens: 500,
-      system: systemPrompt,
-      messages: [{ role: "user", content: userPrompt }],
-    }),
-  });
+  for (let attempt = 0; attempt < XAI_MAX_ATTEMPTS; attempt += 1) {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), XAI_REQUEST_TIMEOUT_MS);
+    let response: Response;
 
-  if (!response.ok) {
-    const errText = await response.text();
-    throw new Error(`Claude API error: ${response.status} ${errText}`);
+    try {
+      response = await fetch(XAI_CHAT_COMPLETIONS_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify({
+          model: env.XAI_MODEL || DEFAULT_XAI_MODEL,
+          messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: userPrompt },
+          ],
+          temperature: 0.2,
+        }),
+        signal: controller.signal,
+      });
+    } catch (error) {
+      if (error instanceof Error && error.name === "AbortError") {
+        throw new Error("Grok API request timed out. Please try again.");
+      }
+
+      throw new Error("Unable to reach the Grok API. Please try again.");
+    } finally {
+      clearTimeout(timeout);
+    }
+
+    if (!response.ok) {
+      if (isTransientStatus(response.status) && attempt + 1 < XAI_MAX_ATTEMPTS) {
+        await delay(250);
+        continue;
+      }
+
+      throw new Error(`Grok API request failed (status ${response.status}).`);
+    }
+
+    let data: unknown;
+    try {
+      data = await response.json();
+    } catch {
+      throw new Error("Grok API returned an invalid response.");
+    }
+
+    return getTextContent(data);
   }
 
-  return getTextContent(await response.json());
+  throw new Error("Grok API request failed. Please try again.");
 }
 
 export const storeInsight = internalMutation({
@@ -124,12 +163,12 @@ export const runDualAgentAnalysis = action({
       const insightSystemPrompt =
         "You are a health pattern analysis agent. Given a list of symptom logs, identify ONE specific, concrete pattern or correlation in the data, prioritizing relationships among multiple symptoms and/or lifestyle factors such as mood, energy, and sleep. Respond with ONLY one sentence describing the candidate pattern. No preamble, no caveats, no medical advice.";
       const candidatePattern = (
-        await callClaude(insightSystemPrompt, `Symptom logs:\n${logsSummary}\n\nIdentify one candidate pattern.`)
+        await callGrok(insightSystemPrompt, `Symptom logs:\n${logsSummary}\n\nIdentify one candidate pattern.`)
       ).trim();
 
       const verifierSystemPrompt =
         'You are a skeptical verification agent. You will be given a candidate health pattern and the raw log data it was based on. Check whether the data supports the claimed correlation between symptoms and/or lifestyle factors, including whether the relationship is consistent across relevant logs and whether there are enough observations to support the confidence level. Respond with ONLY a JSON object (no markdown, no code fences) in this exact shape: {"status": "Verified" | "Confirmed" | "Insufficient", "confidence": number 0-100, "evidenceCount": number, "finalPatternText": string}. Use "Verified" only for a strong, consistent correlation supported by sufficient relevant evidence and assign a high confidence only when the data warrants it. Use "Confirmed" for a plausible but partial or less consistent correlation with moderate confidence. Use "Insufficient" when the data does not clearly support a correlation, is inconsistent, or lacks enough relevant observations; assign low confidence. "evidenceCount" must reflect the number of logs that directly support the final correlation. "finalPatternText" should be a corrected, precise description of what the data actually shows.';
-      const verifierRaw = await callClaude(
+      const verifierRaw = await callGrok(
         verifierSystemPrompt,
         `Candidate pattern: "${candidatePattern}"\n\nRaw symptom logs:\n${logsSummary}\n\nVerify this pattern against the raw data.`,
       );
