@@ -1,4 +1,4 @@
-import { action, internalMutation } from "./_generated/server";
+import { action, env, internalMutation } from "./_generated/server";
 import { internal, api } from "./_generated/api";
 import { aiInsightFields } from "./validators";
 import type { Doc } from "./_generated/dataModel";
@@ -6,11 +6,37 @@ import type { Doc } from "./_generated/dataModel";
 const CLAUDE_API_URL = "https://api.anthropic.com/v1/messages";
 const CLAUDE_MODEL = "claude-sonnet-5";
 
+type ClaudeTextBlock = {
+  type?: unknown;
+  text?: unknown;
+};
+
+function getTextContent(data: unknown): string {
+  if (
+    typeof data !== "object" ||
+    data === null ||
+    !("content" in data) ||
+    !Array.isArray(data.content)
+  ) {
+    throw new Error("Claude API returned an unexpected response format");
+  }
+
+  const textBlock = data.content.find(
+    (block): block is ClaudeTextBlock =>
+      typeof block === "object" &&
+      block !== null &&
+      (block as ClaudeTextBlock).type === "text" &&
+      typeof (block as ClaudeTextBlock).text === "string",
+  );
+
+  return typeof textBlock?.text === "string" ? textBlock.text : "";
+}
+
 async function callClaude(
   systemPrompt: string,
   userPrompt: string,
 ): Promise<string> {
-  const apiKey = process.env.ANTHROPIC_API_KEY;
+  const apiKey = env.ANTHROPIC_API_KEY;
   if (!apiKey) {
     throw new Error(
       "ANTHROPIC_API_KEY is not set in Convex environment variables",
@@ -37,9 +63,7 @@ async function callClaude(
     throw new Error(`Claude API error: ${response.status} ${errText}`);
   }
 
-  const data = await response.json();
-  const textBlock = data.content?.find((block: any) => block.type === "text");
-  return textBlock?.text ?? "";
+  return getTextContent(await response.json());
 }
 
 export const storeInsight = internalMutation({
