@@ -19,23 +19,28 @@ export type { SymptomTone } from "@/lib/symptom-tokens";
 export { toneClasses } from "@/lib/symptom-tokens";
 
 export interface SymptomOption {
-  id: string;
+  /**
+   * Canonical value sent to the backend as both a `symptoms[]` entry and the
+   * matching key in `severities`. Must be EXACTLY the same string in both
+   * places — this is also what's shown on the chip, so there is only one
+   * source of truth and no risk of a label/value mismatch.
+   */
   label: string;
   icon: LucideIcon;
   tone: SymptomTone;
 }
 
 export const SYMPTOM_OPTIONS: SymptomOption[] = [
-  { id: "cramps", label: "Cramps", icon: Flame, tone: "pain" },
-  { id: "headache", label: "Headache", icon: Brain, tone: "pain" },
-  { id: "back-pain", label: "Back Pain", icon: Activity, tone: "pain" },
-  { id: "bloating", label: "Bloating", icon: Cloud, tone: "energy" },
-  { id: "fatigue", label: "Fatigue", icon: BatteryLow, tone: "energy" },
-  { id: "nausea", label: "Nausea", icon: Waves, tone: "energy" },
-  { id: "cravings", label: "Cravings", icon: Cookie, tone: "energy" },
-  { id: "mood-swings", label: "Mood Swings", icon: Smile, tone: "mood" },
-  { id: "anxiety", label: "Anxiety", icon: Wind, tone: "mood" },
-  { id: "breast-tenderness", label: "Breast Tenderness", icon: Heart, tone: "mood" },
-  { id: "acne", label: "Acne", icon: Sparkle, tone: "mood" },
-  { id: "insomnia", label: "Insomnia", icon: Moon, tone: "sleep" },
+  { label: "Cramps", icon: Flame, tone: "pain" },
+  { label: "Headache", icon: Brain, tone: "pain" },
+  { label: "Back Pain", icon: Activity, tone: "pain" },
+  { label: "Bloating", icon: Cloud, tone: "energy" },
+  { label: "Fatigue", icon: BatteryLow, tone: "energy" },
+  { label: "Nausea", icon: Waves, tone: "energy" },
+  { label: "Cravings", icon: Cookie, tone: "energy" },
+  { label: "Mood Swings", icon: Smile, tone: "mood" },
+  { label: "Anxiety", icon: Wind, tone: "mood" },
+  { label: "Breast Tenderness", icon: Heart, tone: "mood" },
+  { label: "Acne", icon: Sparkle, tone: "mood" },
+  { label: "Insomnia", icon: Moon, tone: "sleep" },
 ];

@@ -127,8 +127,8 @@ const Home = () => {
                 label="Mood"
                 tone="mood"
                 icon={Smile}
-                value={latest.mood != null ? `${latest.mood}` : "—"}
-                hint={latest.mood != null ? "/ 5" : "no rating"}
+                value={latest.mood ? latest.mood : "—"}
+                hint={latest.mood ? "self-reported" : "no rating"}
               />
               <OverviewCard
                 label="Sleep"

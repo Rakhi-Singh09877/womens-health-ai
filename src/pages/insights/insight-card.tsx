@@ -2,7 +2,6 @@ import { useState } from "react";
 import {
   ChevronDown,
   Clock,
-  ShieldAlert,
   ShieldCheck,
   Sparkles,
   type LucideIcon,
@@ -15,20 +14,20 @@ const statusMeta: Record<
   InsightStatus,
   { label: string; icon: LucideIcon; classes: string }
 > = {
-  verified: {
+  Verified: {
     label: "Verified",
     icon: ShieldCheck,
     classes: "bg-success-soft text-success",
   },
-  pending: {
-    label: "Pending",
+  Confirmed: {
+    label: "Confirmed",
+    icon: ShieldCheck,
+    classes: "bg-success-soft text-success",
+  },
+  Insufficient: {
+    label: "Insufficient Data",
     icon: Clock,
     classes: "bg-warning-soft text-warning",
-  },
-  contradicted: {
-    label: "Contradicted",
-    icon: ShieldAlert,
-    classes: "bg-pain-soft text-pain",
   },
 };
 
@@ -38,7 +37,7 @@ interface InsightCardProps {
 
 export const InsightCard = ({ insight }: InsightCardProps) => {
   const [open, setOpen] = useState(false);
-  const meta = statusMeta[insight.status] ?? statusMeta.pending;
+  const meta = statusMeta[insight.status] ?? statusMeta.Insufficient;
   const StatusIcon = meta.icon;
   const rawConfidence = insight.confidence ?? 0;
   const confidence = Math.round(rawConfidence > 1 ? rawConfidence : rawConfidence * 100);
@@ -53,10 +52,12 @@ export const InsightCard = ({ insight }: InsightCardProps) => {
             </span>
             <div>
               <h3 className="text-sm font-semibold leading-tight text-foreground">
-                {insight.title}
+                {insight.patternText}
               </h3>
-              {insight.category ? (
-                <p className="mt-0.5 text-[11px] text-muted-foreground">{insight.category}</p>
+              {insight.triggeredSymptoms && insight.triggeredSymptoms.length > 0 ? (
+                <p className="mt-0.5 text-[11px] text-muted-foreground">
+                  {insight.triggeredSymptoms.join(", ")}
+                </p>
               ) : null}
             </div>
           </div>
@@ -72,8 +73,6 @@ export const InsightCard = ({ insight }: InsightCardProps) => {
       </div>
 
       <div className="space-y-3 px-4 pb-4">
-        <p className="text-sm leading-relaxed text-muted-foreground">{insight.description}</p>
-
         <div>
           <div className="mb-1 flex items-center justify-between text-xs">
             <span className="text-muted-foreground">Confidence</span>

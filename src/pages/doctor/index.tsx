@@ -57,7 +57,7 @@ const Doctor = () => {
   const loading = insights === undefined || logs === undefined;
 
   const confirmed = useMemo(
-    () => (insights ?? []).filter((i) => i.status === "verified"),
+    () => (insights ?? []).filter((i) => i.status === "Verified" || i.status === "Confirmed"),
     [insights],
   );
   const totalLogs = logs?.length ?? 0;

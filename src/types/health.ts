@@ -40,8 +40,8 @@ export interface SymptomLog {
   symptoms: string[];
   /** Map of symptom name -> severity 1..5 */
   severities: Record<string, number>;
-  /** 1..5 mood rating */
-  mood?: number;
+  /** self-reported mood category, e.g. "Calm", "Good", "Low" (backend requires a string) */
+  mood?: string;
   /** 1..5 energy rating */
   energy?: number;
   /** hours slept */
@@ -57,20 +57,22 @@ export interface CycleDayPhase {
   phaseLabel?: string;
 }
 
-export type InsightStatus = "verified" | "pending" | "contradicted";
+export type InsightStatus = "Verified" | "Confirmed" | "Insufficient";
 
 export interface AiInsight {
   _id: string;
   _creationTime: number;
   userId: string;
-  title: string;
-  description: string;
-  status: InsightStatus;
-  /** 0..1 */
+  /** the observed pattern, e.g. "Headaches tend to follow low-sleep days" */
+  patternText: string;
+  /** 0..100 */
   confidence: number;
+  status: InsightStatus;
   evidenceCount: number;
+  processingStatus?: string;
   agentDebateSummary?: string;
-  category?: string;
+  triggeredSymptoms?: string[];
+  createdAt?: number;
 }
 
 export interface TimelineEntry {

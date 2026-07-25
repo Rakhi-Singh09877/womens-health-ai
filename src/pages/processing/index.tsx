@@ -12,9 +12,11 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { api } from "@/lib/convex-client";
+import { getErrorMessage } from "@/lib/convex-error";
 import { useSession } from "@/context/session-context";
 import { AppShell } from "@/components/layout/app-shell";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 type StepState = "pending" | "active" | "done";
 
@@ -54,8 +56,12 @@ const Processing = () => {
         if (!cancelled) setActionDone(true);
       })
       .catch((err) => {
-        console.error("runDualAgentAnalysis failed", err);
-        if (!cancelled) setActionDone(true);
+        const message = getErrorMessage(err);
+        console.error("[Processing] runDualAgentAnalysis failed:", message, err);
+        if (!cancelled) {
+          toast.error(message);
+          setActionDone(true);
+        }
       })
       .finally(() => window.clearTimeout(hardTimeout));
 

@@ -4,6 +4,7 @@ import { useMutation, useQuery } from "convex/react";
 import { Apple, ArrowRight, Chrome, Facebook, HeartPulse, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { api } from "@/lib/convex-client";
+import { getErrorMessage } from "@/lib/convex-error";
 import { useSession } from "@/context/session-context";
 import { AppShell } from "@/components/layout/app-shell";
 import { Button } from "@/components/ui/button";
@@ -88,8 +89,9 @@ const Auth = () => {
       setSession(id, true);
       navigate("/onboarding", { replace: true });
     } catch (err) {
-      console.error(err);
-      toast.error("Could not create your account. Please try again.");
+      const message = getErrorMessage(err);
+      console.error("[Auth] createUser failed:", message, err);
+      toast.error(message);
     } finally {
       setCreating(false);
     }
