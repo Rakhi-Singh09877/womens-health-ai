@@ -126,34 +126,34 @@ Screens, mapped from the 10 attached screenshots + 1 non-screenshotted screen:
   "Convex Database" — no backend calls.
 
 ## Implementation Checklist
-- [ ] Add `convex` dependency; create `src/lib/convex-client.ts` with hardcoded URL + `api = anyApi`
-- [ ] Wrap app in `ConvexProvider` (`main.tsx`) and `SessionProvider` (`App.tsx`)
-- [ ] Define `src/types/health.ts` interfaces for all 7 backend data shapes
-- [ ] Build `session-context.tsx` + `require-session.tsx` with localStorage persistence
-- [ ] Add violet primary + pain/energy/mood/sleep/success/warning tokens to `index.css` and `tailwind.config.ts`
-- [ ] Build shared `app-shell`, `bottom-nav`, `page-header` layout components
-- [ ] Auth screen: sign-in-by-email + inline create-account fallback, session set on success
-- [ ] Onboarding screen: static 3-slide carousel, Continue → Home
-- [ ] Home screen: cycle badge + 4 overview cards + Log Symptoms CTA, empty state when no logs
-- [ ] Log Symptoms screen: chip multi-select, shared severity slider, mood/energy/sleep/notes, submit → createSymptomLog → Processing
-- [ ] Processing screen: fires `runDualAgentAnalysis` action, 4-step animated checklist, navigates to Insights on completion
-- [ ] Insights screen: card list with status badge, confidence bar, evidence count, expandable agent debate summary, link to Architecture
-- [ ] Timeline screen: month-grouped entries from `getSymptomTimeline`, disclaimer banner, factual "N months tracked" summary (no fabricated verified/contradicted counts)
-- [ ] History screen: heatmap grid aggregated from monthly logs + pain trend line chart
-- [ ] Profile screen: user info, conditions list (no badge), medications list, real Days Tracked/Insights stats only
-- [ ] Doctor Dashboard screen: name-only header, real stat counts (no Risk Level/DoB), Verified/Confirmed pattern cards, link to Timeline
-- [ ] AI Architecture screen: 3-step accurate pipeline diagram, entry link from Insights
-- [ ] Register all routes in `router.tsx`, protected ones wrapped in `RequireSession`
+- [passed] Add `convex` dependency; create `src/lib/convex-client.ts` with hardcoded URL + `api = anyApi`
+- [passed] Wrap app in `ConvexProvider` (`main.tsx`) and `SessionProvider` (`App.tsx`)
+- [passed] Define `src/types/health.ts` interfaces for all 7 backend data shapes
+- [passed] Build `session-context.tsx` + `require-session.tsx` with localStorage persistence
+- [passed] Add violet primary + pain/energy/mood/sleep/success/warning tokens to `index.css` and `tailwind.config.ts`
+- [passed] Build shared `app-shell`, `bottom-nav`, `page-header` layout components
+- [passed] Auth screen: sign-in-by-email + inline create-account fallback, session set on success
+- [passed] Onboarding screen: static 3-slide carousel, Continue → Home
+- [passed] Home screen: cycle badge + 4 overview cards + Log Symptoms CTA, empty state when no logs
+- [passed] Log Symptoms screen: chip multi-select, shared severity slider, mood/energy/sleep/notes, submit → createSymptomLog → Processing
+- [passed] Processing screen: fires `runDualAgentAnalysis` action, 4-step animated checklist, navigates to Insights on completion
+- [passed] Insights screen: card list with status badge, confidence bar, evidence count, expandable agent debate summary, link to Architecture
+- [passed] Timeline screen: month-grouped entries from `getSymptomTimeline`, disclaimer banner, factual "N months tracked" summary (no fabricated verified/contradicted counts)
+- [passed] History screen: heatmap grid aggregated from monthly logs + pain trend line chart
+- [passed] Profile screen: user info, conditions list (no badge), medications list, real Days Tracked/Insights stats only
+- [passed] Doctor Dashboard screen: name-only header, real stat counts (no Risk Level/DoB), Verified/Confirmed pattern cards, link to Timeline
+- [passed] AI Architecture screen: 3-step accurate pipeline diagram, entry link from Insights
+- [passed] Register all routes in `router.tsx`, protected ones wrapped in `RequireSession`
 
 ## Verification Checklist
-- [ ] App loads at `/`, shows Auth screen matching screenshot styling (gradient hero, Sign In/Create Account tabs, 3 provider buttons)
-- [ ] Signing in with the seed userId's email (or creating a new user) correctly sets session and routes to Onboarding (new user) or Home (existing user)
-- [ ] Refreshing the browser preserves the logged-in session (localStorage)
-- [ ] Visiting a protected route (e.g. `/home`) with no session redirects to `/`
-- [ ] Home overview cards render real values from `listSymptomLogs`/`getCycleDayAndPhase`, and a sensible empty state when there are no logs
-- [ ] Logging symptoms creates a record (verify via Home overview updating) and always proceeds to Processing → Insights
-- [ ] Processing screen calls `runDualAgentAnalysis` via `useAction` (not a mutation) and only navigates onward after it resolves
-- [ ] Insights list reflects `getAiInsightsByUserId` data, including a new insight after a fresh log/analysis cycle
-- [ ] Profile and Doctor Dashboard never render Premium/Accuracy/Active-badge/Risk-Level/DoB — confirmed absent from rendered output
-- [ ] Timeline, History, Architecture screens render without runtime errors and visually match the design language of the other screens
-- [ ] `pnpm lint` and the project build both pass with no errors
+- [passed] App loads at `/`, shows Auth screen matching screenshot styling (gradient hero, Sign In/Create Account tabs, 3 provider buttons)
+- [manual-required] Signing in with the seed userId's email (or creating a new user) correctly sets session and routes to Onboarding (new user) or Home (existing user)
+- [passed] Refreshing the browser preserves the logged-in session (localStorage)
+- [passed] Visiting a protected route (e.g. `/home`) with no session redirects to `/`
+- [manual-required] Home overview cards render real values from `listSymptomLogs`/`getCycleDayAndPhase`, and a sensible empty state when there are no logs
+- [manual-required] Logging symptoms creates a record (verify via Home overview updating) and always proceeds to Processing → Insights
+- [manual-required] Processing screen calls `runDualAgentAnalysis` via `useAction` (not a mutation) and only navigates onward after it resolves
+- [manual-required] Insights list reflects `getAiInsightsByUserId` data, including a new insight after a fresh log/analysis cycle
+- [passed] Profile and Doctor Dashboard never render Premium/Accuracy/Active-badge/Risk-Level/DoB — confirmed absent from rendered output
+- [passed] Timeline, History, Architecture screens render without runtime errors and visually match the design language of the other screens
+- [passed] `pnpm lint` and the project build both pass with no errors
