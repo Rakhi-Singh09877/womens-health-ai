@@ -69,8 +69,8 @@ const Auth = () => {
 
   const handleCreate = async (e: FormEvent) => {
     e.preventDefault();
-    if (!email.trim() || !name.trim()) {
-      toast.error("Name and email are required.");
+    if (!email.trim() || !name.trim() || !phone.trim()) {
+      toast.error("Name, email, and phone are required.");
       return;
     }
     setCreating(true);
@@ -79,7 +79,7 @@ const Auth = () => {
         name: name.trim(),
         email: email.trim(),
         age: age ? Number(age) : undefined,
-        phone: phone.trim() || undefined,
+        phone: phone.trim(),
       })) as unknown;
       const id =
         typeof result === "string"
@@ -185,7 +185,7 @@ const Auth = () => {
                   id="phone"
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
-                  placeholder="Optional"
+                  placeholder="555-0100"
                   autoComplete="tel"
                 />
               </div>
